@@ -1,10 +1,13 @@
 import express from 'express'
 import cors from 'cors'
 import { format } from 'date-fns';
-import {da, vi} from 'date-fns/locale'
+import { vi, enUS } from 'date-fns/locale'
 import db from './database/connect.js';
-import getPreviousTwoDays from "./utils/utils.js"
+import { getPreviousTwoDays, parseDayofWeek, parseDate, getTinhByDay } from "./utils/utils.js"
+import { getResultProvices } from "./external/result.js"
+import { calendar } from './utils/data/contants.js';
 
+const DAYSTART = "10-03-2024"
 
 const app = express();
 const port = 8764
@@ -17,14 +20,24 @@ const kqxs = db.collection('ketquaxoso')
 app.get('/ketquaxoso/:ngay', async (req, res) => {
     let day = req.params.ngay
     const query = { Ngay: day };
-    const result = (await kqxs.find(query).toArray()).reduce((result, obj) => {
+    let result = (await kqxs.find(query).toArray())
+    const tinhResult = result.map((item) => item.Tinh)
+    const parsedDay = parseDate(day)
+    const dayOfWeek = parseDayofWeek(format(parsedDay, 'EEEE', { locale: enUS}))
+    const  tinhDate = getTinhByDay(dayOfWeek)
+    const addedTinh = tinhDate.filter(item => !tinhResult.includes(item.ten))
+    if (addedTinh.length > 0 && new Date() - parseDate > 3600000){
+        const addedTinhResult = await getResultProvices(addedTinh, day)
+        result = result.concat(addedTinhResult)
+    }
+    result = result.reduce((result, obj) => {
         const groupField = obj.Vung;
         if (!result[groupField]) {
           result[groupField] = [];
         }
         result[groupField].push(obj);
         return result;
-      }, {});;
+    }, {});
 
     res.json(result);
 });
@@ -32,10 +45,20 @@ app.get('/ketquaxoso/:ngay', async (req, res) => {
 app.get('/ketquaxoso/:vung/:ngay', async (req, res) => {
     let day = req.params.ngay
     const vung = req.params.vung
+    const parsedDay = parseDate(day)
+    const dayOfWeek = parseDayofWeek(format(parsedDay, 'EEEE', { locale: enUS}))
+    const tinhDate = calendar[dayOfWeek][vung].tinh
     if(day === "latest")
         day = format(new Date(), 'dd-MM-yyyy', { locale: vi});
     const query = { Ngay: {$in: [day, ...getPreviousTwoDays(day)]}, Vung: vung};
-    const result = (await kqxs.find(query).toArray()).reduce((result, obj) => {
+    let result = (await kqxs.find(query).toArray())
+    const tinhResult = result.map((item) => item.Tinh)
+    const addedTinh = tinhDate.filter(item => !tinhResult.includes(item.ten))
+    if (addedTinh.length > 0 && new Date() - parseDate > 3600000){
+        const addedTinhResult = await getResultProvices(addedTinh, day)
+        result = result.concat(addedTinhResult)
+    }
+    result = result.reduce((result, obj) => {
         const groupField = obj.Ngay;
       
         if (!result[groupField]) {
@@ -53,6 +76,12 @@ app.get('/ketquaxoso/:vung/:ngay', async (req, res) => {
 app.get('/ketquaxoso/:vung/:tinh/:ngay', async (req, res) => {
     let day = req.params.ngay
     const tinh = req.params.tinh
+    const exist = kqxs.findOne({Ngay: day, Tinh: tinh})
+    // dieu kien ngay
+    if(!exist){
+        const addedTinhResult = await getResultProvices(addedTinh, day)
+        result = result.concat(addedTinhResult)
+    }
     let result
     if(day === "latest"){
         day = format(new Date(), 'dd-MM-yyyy', { locale: vi});
