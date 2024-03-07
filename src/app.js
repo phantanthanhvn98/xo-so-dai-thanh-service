@@ -12,6 +12,7 @@ app.use(express.json());
 app.use(cors())
 
 const kqxs = db.collection('ketquaxoso')
+const users = db.collection('users')
 
 ////////////////// GETTER ////////////////////////
 app.get('/ketquaxoso/:ngay', async (req, res) => {
@@ -35,17 +36,18 @@ app.get('/ketquaxoso/:vung/:ngay', async (req, res) => {
     if(day === "latest")
         day = format(new Date(), 'dd-MM-yyyy', { locale: vi});
     const query = { Ngay: {$in: [day, ...getPreviousTwoDays(day)]}, Vung: vung};
-    const result = (await kqxs.find(query).toArray()).reduce((result, obj) => {
-        const groupField = obj.Ngay;
+    const result = (await kqxs.find(query, {projection:{_id:0}}).toArray())
+    // .reduce((result, obj) => {
+    //     const groupField = obj.Ngay;
       
-        if (!result[groupField]) {
-          result[groupField] = [];
-        }
+    //     if (!result[groupField]) {
+    //       result[groupField] = [];
+    //     }
       
-        result[groupField].push(obj);
+    //     result[groupField].push(obj);
       
-        return result;
-      }, {});;
+    //     return result;
+    //   }, {});;
 
     res.json(result);
 });
@@ -74,12 +76,22 @@ app.get('/ketquaxoso/:vung/:tinh/:ngay', async (req, res) => {
     }, {}))
 });
 
-
 ////////////////// SETTER //////////////////////////
 app.post('/ketquaxoso', async( req, res) => {
     const data = req.body
-    await kqxs.updateOne({Tinh: data.Tinh, Ngay: data.Ngay}, {$set: data}, {upsert: true})
+    data.map((item) =>{
+        kqxs.updateOne({Tinh: item.Tinh, Ngay: item.Ngay}, {$set: item}, {upsert: true}).then((item2) =>{
+            console.log(`insert oke: ${item.Ngay} ${item.Tinh}`)
+        })
+    })
     res.json(data)
+})
+
+//////////////// SECURITY //////////////////////////
+
+app.post('/login', async (req, res) => {
+    const data = await users.findOne({username: req.body.username, password: req.body.password})
+    res.json(data) 
 })
 
 app.listen(port, () => {
