@@ -22,11 +22,12 @@ app.get('/ketquaxoso/:ngay', async (req, res) => {
     let day = req.params.ngay
     let dayNam, dayTrung, dayBac
     if(day === "latest"){
-        // day = format(new Date(), 'dd-MM-yyyy', { locale: vi});
-        dayNam = isMienNamLive() ? format(new Date(), 'dd-MM-yyyy', { locale: vi}) : getPreviousNDays(day, 1)
-        dayTrung = isMienTrungLive() ? format(new Date(), 'dd-MM-yyyy', { locale: vi}) : getPreviousNDays(day, 1)
-        dayBac = isMienBacLive() ? format(new Date(), 'dd-MM-yyyy', { locale: vi}) : getPreviousNDays(day, 1)
+        day = format(new Date(), 'dd-MM-yyyy', { locale: vi});
+        dayNam = isMienNamLive() ? day: getPreviousNDays(day, 1)[0]
+        dayTrung = isMienTrungLive() ? day : getPreviousNDays(day, 1)[0]
+        dayBac = isMienBacLive() ? day: getPreviousNDays(day, 1)[0]
     }
+    console.log(dayNam, dayTrung, dayBac)
     const query = {$or: [{
         Ngay: dayNam,
         Vung: "Miền Nam"
@@ -47,8 +48,7 @@ app.get('/ketquaxoso/:ngay', async (req, res) => {
         }
         result[groupField].push(obj);
         return result;
-      }, {});;
-
+      }, {});
     res.json(result);
 });
 
@@ -86,7 +86,7 @@ app.get('/ketquaxoso/:vung/:tinh/:ngay', async (req, res) => {
 ////////////////// SETTER //////////////////////////
 app.post('/ketquaxoso', async( req, res) => {
     if(req.headers.username !== "admin" && req.headers.password !== 'admin@123qwe@Searchdrive30##')
-        res.status(401)
+        res.status(401).json()
     const data = req.body
     data.map((item) =>{
         item.createdAt = parseDateFromDDMMYYYY(item.Ngay)
