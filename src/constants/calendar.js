@@ -53,7 +53,7 @@ export const calendar = {
                     ten: "Quảng Nam"
                 },
                 {
-                    ten: "Đắc Lắc"
+                    ten: "Đắc Lắk"
                 }
             ]
         },
@@ -248,6 +248,9 @@ export const calendar = {
                 },
                 {
                     ten: "Kontum"
+                },
+                {
+                    ten: "Thừa Thiên Huế"
                 }
             ]
         },

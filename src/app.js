@@ -8,7 +8,6 @@ import cron  from "node-cron"
 import { startLiveMienNam, startLiveMienTrung, startLiveMienBac } from "./cron/startlivemiennam.js"
 import { isMienBacLive, isMienNamLive, isMienTrungLive } from './utils/schedule.js';
 
-
 const app = express();
 const port = 8764
 app.use(express.json());
@@ -27,7 +26,6 @@ app.get('/ketquaxoso/:ngay', async (req, res) => {
         dayTrung = isMienTrungLive() ? day : getPreviousNDays(day, 1)[0]
         dayBac = isMienBacLive() ? day: getPreviousNDays(day, 1)[0]
     }
-    console.log(dayNam, dayTrung, dayBac)
     const query = {$or: [{
         Ngay: dayNam,
         Vung: "Miền Nam"
@@ -78,8 +76,8 @@ app.get('/ketquaxoso/:vung/:tinh/:ngay', async (req, res) => {
     let result
     if(day === "latest")
         day = format(new Date(), 'dd-MM-yyyy', { locale: vi});
-    const query = { Ngay: {$in: [day, ...getPreviousNDays(day, page)]}, Tinh: tinh};
-    result = await kqxs.find(query, {projection:{_id:0}}).toArray()
+    const query = { Ngay: {$in: [day, ...getPreviousNDays(day, page*7)]}, Tinh: tinh};
+    result = await kqxs.find(query, {projection:{_id:0}}).sort({createdAt: 'desc'}).toArray()
     res.json(result);
 });
 
