@@ -53,7 +53,7 @@ export const calendar = {
                     ten: "Quảng Nam"
                 },
                 {
-                    ten: "Đắc Lắk"
+                    ten: "Đắk Lắk"
                 }
             ]
         },
